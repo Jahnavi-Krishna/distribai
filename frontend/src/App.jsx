@@ -2,7 +2,7 @@ import { useState } from "react";
 import ChatWindow from "./components/ChatWindow";
 import InputBar from "./components/InputBar";
 import BackgroundCanvas from "./components/BackgroundCanvas";
-import { sendMessage } from "./api";
+import { sendMessageStream } from "./api";
 import "./App.css";
 
 function BotIcon() {
@@ -21,9 +21,9 @@ function BotIcon() {
 
 const WELCOME = {
   role: "assistant",
-  content: `Welcome to DistribAI — your AI sales assistant for industrial equipment.
+  content: `Welcome to Nexus — your AI sales assistant for industrial equipment.
 
-I can help you find the right product for any application, check specs and live availability, compare options side by side, or draft a professional quote for any customer.
+I can help you find the right product for any application, check specs and availability, compare options, or draft a professional quote for any customer.
 
 What are you looking for today?`,
 };
@@ -38,17 +38,46 @@ export default function App() {
     setMessages(updated);
     setLoading(true);
 
+    const history = updated.slice(1).map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    let isFirstChunk = true;
+
     try {
-      const history = updated.slice(1).map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-      const data = await sendMessage(text, history);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.response, sources: data.sources },
-      ]);
+      await sendMessageStream(
+        text,
+        history,
+        (chunk) => {
+          if (isFirstChunk) {
+            // First word arrives — show the message, hide loading dots
+            isFirstChunk = false;
+            setLoading(false);
+            setMessages((prev) => [
+              ...prev,
+              { role: "assistant", content: chunk, sources: [] },
+            ]);
+          } else {
+            // Append each subsequent word to the last message
+            setMessages((prev) => {
+              const rest = prev.slice(0, -1);
+              const last = prev[prev.length - 1];
+              return [...rest, { ...last, content: last.content + chunk }];
+            });
+          }
+        },
+        (sources) => {
+          // Attach sources when streaming is done
+          setMessages((prev) => {
+            const rest = prev.slice(0, -1);
+            const last = prev[prev.length - 1];
+            return [...rest, { ...last, sources }];
+          });
+        }
+      );
     } catch {
+      setLoading(false);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: "Something went wrong. Please try again." },
@@ -65,7 +94,7 @@ export default function App() {
         <header className="app-header">
           <div className="header-icon"><BotIcon /></div>
           <div className="header-text">
-            <h1>DistribAI</h1>
+            <h1>Nexus</h1>
             <p>Ask about products · Compare specs · Request a quote</p>
           </div>
           <div className="status-badge">Online</div>
