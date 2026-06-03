@@ -21,7 +21,7 @@ function BotIcon() {
 
 const WELCOME = {
   role: "assistant",
-  content: `Welcome to Nexus — your AI sales assistant for industrial equipment.
+  content: `Welcome to DistribAI — your AI sales assistant for industrial equipment.
 
 I can help you find the right product for any application, check specs and availability, compare options, or draft a professional quote for any customer.
 
@@ -94,7 +94,7 @@ export default function App() {
         <header className="app-header">
           <div className="header-icon"><BotIcon /></div>
           <div className="header-text">
-            <h1>Nexus</h1>
+            <h1>DistribAI</h1>
             <p>Ask about products · Compare specs · Request a quote</p>
           </div>
           <div className="status-badge">Online</div>
